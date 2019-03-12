@@ -1,0 +1,570 @@
+	#data part 	
+	.data	
+array: 		.space 400 #cretaed an array, max size:400 ie. it can contain 100 integers 
+prompt:		.asciiz "Please enter the number of elements: "
+enterIntPrompt:	.asciiz "Enter a number: "
+endl: 		.asciiz "\n"
+seperator: 	.asciiz "-"
+iterator: 	.word 0 #iterator=0
+numberOfElements: .word
+menuHeader:	.asciiz "Please choose an operation to perform: \n"
+
+oper1:		.asciiz "1)Find summation of numbers stored in the array which is greater than an input number. \n"
+oper1Message:	.asciiz "Enter a number to compare with elements of the array: "
+sum1:		.word
+element:	.word
+
+oper2:		.asciiz "2)Find summation of even and odd numbers and display them. \n"
+sumOfEvens:	.asciiz "Sum of even numbers: "
+sumOfOdds:	.asciiz "\nSum of odd numbers: "
+
+oper3:		.asciiz "3)Display the number of occurrences of the array elements divisible by a certain input number.\n"
+oper3Message:	.asciiz "Enter number to divide elements: "
+divisibleElements:.asciiz "Number of elements divisible by provided number: "
+
+oper4:		.asciiz "4)Quit \n"
+
+variables:	.space 80 #20
+invalid:	.asciiz "Invalid selection! \n"
+displayArray: 	.asciiz "\nArray: "
+
+	#text part 
+	.text
+	.globl __start
+
+__start:
+	la $t0,array 
+	lw $t1,iterator#i
+	lw $t2,numberOfElements
+	la $s1,variables
+
+####################################################
+	
+	la $a0,prompt#Welcome message 
+	li $v0,4
+	syscall
+	
+	li $v0,5
+	syscall	
+	
+	move $t2,$v0 # number of elements
+	addi $t2,$t2,-1# we will start at index 0 
+	
+loop:	bgt $t1,$t2,loopDone #Takes all of the elements one by one from user and stores them in an array 
+	
+	sll $t7,$t1,2 #t4=i; t6=4*i
+	
+	addu $t7,$t7,$t0
+	
+	la $a0,enterIntPrompt# Enter 1
+	li $v0,4
+	syscall
+	
+	li $v0,5
+	syscall
+	
+	#la $t0,($v0)
+	
+	sw $v0,0($t7)
+	
+	addi $t1,$t1,1
+	j loop	
+
+loopDone: mul $t7,$t7,0
+	mul $t1,$t1,0
+	j menu
+	
+	###   MENU  ###	
+menu: 	la $a0,menuHeader# DISPLAY MENU
+	li $v0,4
+	syscall
+	
+	la $a0,oper1 #1
+	li $v0,4
+	syscall
+	
+	la $a0,oper2#2
+	li $v0,4
+	syscall
+	
+	la $a0,oper3#3
+	li $v0,4
+	syscall
+	
+	la $a0,oper4#4
+	li $v0,4
+	syscall
+	
+	li $v0,5#take the choice of user 
+	syscall
+	
+	beq $v0,4,exit#if(input==4) Exit;
+	j else1#else
+
+else1:	beq $v0,1,operation1#if(input==1) operation1();
+	j else2#else
+	
+else2:	beq $v0,2,operation2#if(input==2) operation2();
+	j else3
+	
+else3:	beq $v0,3,operation3
+	j invalidInput
+	
+invalidInput:	la $a0,invalid
+		li $v0,4
+		syscall
+		j menu
+
+################################################################
+
+operation1: 	la $a0,oper1Message
+		li $v0,4
+		syscall
+		
+		li $v0,5
+		syscall
+		
+		#sw $v0,0($s1)#variable1: number to compare to 
+		
+		la $t3,($v0)
+		
+oper1_loop:	bgt $t1,$t2,endoper1  
+	
+		sll $t7,$t1,2 #t4=i; t6=4*i
+	
+		addu $t7,$t7,$t0 #t7==array element 
+	
+		addi $t1,$t1,1
+		lw $s2,0($t7)
+		#compare array element and number 
+		
+		blt $t3,$s2,summ
+		
+		j oper1_loop
+
+summ:		add $t4,$t4,$s2
+		
+		j oper1_loop	
+		
+endoper1:		la $a0,($t4)
+		li $v0,1
+		syscall
+		
+		mul $t3,$t3,0
+		mul $t7,$t7,0
+		mul $t1,$t1,0
+		mul $s2,$s2,0
+		mul $t4,$t4,0
+		j print
+		
+################################################################	
+
+operation2:	
+
+oper2_loop:	bgt $t1,$t2,endoper2  
+	
+		sll $t7,$t1,2 #t4=i; t6=4*i
+	
+		addu $t7,$t7,$t0 #t7==array element 
+	
+		addi $t1,$t1,1
+
+		lw $s2,0($t7)#element=>s2
+		
+		andi $t3,$s2,1 #if t3=1 => number is odd ; else it is even
+		
+		beq $t3,$zero,isEven#if(t3==0)
+		j isOdd#else
+
+isEven:		#s3
+		add $s3,$s3,$s2
+		j oper2_loop
+		
+isOdd:		#s4
+		add $s4,$s4,$s2
+		j oper2_loop
+
+endoper2: 	la $a0,sumOfEvens
+		li $v0,4
+		syscall
+		
+		la $a0,($s3)
+		li $v0,1
+		syscall
+		
+		la $a0,sumOfOdds
+		li $v0,4
+		syscall
+		
+		la $a0,($s4)
+		li $v0,1
+		syscall
+		
+		la $a0,endl
+		li $v0,4
+		syscall
+		
+		mul $t3,$t3,0
+		mul $t7,$t7,0
+		mul $t1,$t1,0
+		mul $s2,$s2,0
+		mul $t4,$t4,0
+		mul $s3,$s3,0
+		mul $s4,$s4,0		
+		
+		j print	
+			
+################################################################
+
+operation3:	la $a0,oper3Message
+		li $v0,4
+		syscall
+		
+		li $v0,5
+		syscall
+		
+		la $t3,($v0)#t3=mod()
+
+oper3_loop:	bgt $t1,$t2,endoper3  
+	
+		sll $t7,$t1,2 #t4=i; t6=4*i
+	
+		addu $t7,$t7,$t0 #t7==array element 
+	
+		addi $t1,$t1,1
+
+		lw $s2,0($t7)#element=>s2
+		
+		div $s2,$t3 #divide element by t3(user specified value)
+		
+		mfhi $t4
+		beqz $t4,divisible
+		j oper3_loop
+
+divisible:	add $t5,$t5,1
+		j oper3_loop
+		
+endoper3:		#print number of occurences 
+		la $a0,divisibleElements
+		li $v0,4
+		syscall
+		
+		la $a0,($t5)
+		li $v0,1
+		syscall
+		
+		j print
+
+################################################################
+
+print:		la $a0,displayArray
+		li $v0,4
+		syscall
+	
+print_loop: 	bgt $s0,$t2,printloopDone#
+	
+		sll $t6,$s0,2 #t4=i; t6=4*i
+	
+		addu $t6,$t6,$t0
+	
+		lw $a0,($t6)
+		li $v0,1
+		syscall
+		
+		la $a0,seperator
+		li $v0,4
+		syscall
+		
+		addi $s0,$s0,1
+	
+		j print_loop
+
+printloopDone:	mul $t6,$t6,0
+		j exit
+
+exit:
+	li $v0,10
+	syscall
+
+##
+## Program1.asm - prints out "hello world"
+##
+##	a0 - points to the string
+##
+
+#################################
+#					 	#
+#		text segment		#
+#						#
+#################################
+
+	.text		
+	.globl __start 
+
+__start:		# execution starts here
+	la $a0,str	# put string address into a0
+	li $v0,4	# system call to print
+	syscall	#   out a string
+	
+	li $v0,10  # system call to exit
+	syscall	#    bye bye
+
+
+#################################
+#					 	#
+#     	 data segment		#
+#						#
+#################################
+
+	.data
+str:	.asciiz "Elif Gulsah Kasdogan \n"
+n:	.word	10
+x: 	.word 3
+##
+## end of file Program1.asm
+##
+##	Program3.asm is a loop implementation
+##	of the Fibonacci function
+##        
+
+#################################
+#					 	#
+#		text segment		#
+#						#
+#################################
+
+	.text		
+.globl __start
+ 
+__start:			# execution starts here
+	li $a0,10	# to calculate fib(7)
+	jal fib		# call fib
+	
+	move $a0,$v0	# print result
+	li $v0, 1
+	syscall
+
+	la $a0,endl	# print newline
+	li $v0,4
+	syscall
+
+	li $v0,10
+	syscall		# bye bye
+
+#------------------------------------------------
+
+
+fib:	move $v0,$a0	# initialise last element
+	blt $a0,2,done	# fib(0)=0, fib(1)=1
+
+	li $t0,0		# second last element
+	li $v0,1		# last element
+
+loop:	add $t1,$t0,$v0	# get next value
+	move $t0,$v0	# update second last
+	move $v0,$t1	# update last element
+	subi $a0,$a0,1	# decrement count
+	bgt $a0,1,loop	# exit loop when count=0
+
+done:	jr $ra
+
+#################################
+#					 	#
+#     	 data segment		#
+#						#
+#################################
+
+	.data
+endl:	.asciiz "\n"
+
+##
+## end of Program3.asm
+.text
+	
+	la $a0, enterA
+	li $v0,4
+	syscall
+	
+	li $v0,5
+	syscall
+	
+	move $t0,$v0
+	
+	la $a0, enterB
+	li $v0,4
+	syscall
+	
+	li $v0,5
+	syscall
+	
+	move $t1,$v0
+	
+	la $a0, enterC
+	li $v0,4
+	syscall
+	
+	li $v0,5
+	syscall
+	
+	move $t2,$v0
+	
+	la $a0, enterD
+	li $v0,4
+	syscall
+	
+	li $v0,5
+	syscall
+	
+	move $t3,$v0
+	
+
+	la $a0, enterE
+	li $v0,4
+	syscall
+	
+	li $v0,5
+	syscall
+	
+	move $t4,$v0	
+	
+	
+	div $t0,$t1
+	mflo $t5 # a/b
+	mul $t6,$t2,$t3#c*d
+	mul $t6,$t6,-1#-(c*d)
+	addu $t7,$t6,$t5#a/b - c*d
+	div $t7,$t4
+	mfhi $t7
+
+	la $a0,result
+	li $v0,4
+	syscall	
+
+	la $a0,($t7)
+	li $v0,1
+	syscall
+	
+	li $v0,10
+	syscall
+	
+.data
+result: .asciiz "((A/B)-(C*D))%E = "
+enterA: .asciiz "Enter A: "
+enterB: .asciiz "Enter B: "
+enterC: .asciiz "Enter C: "
+enterD: .asciiz "Enter D: "
+enterE: .asciiz "Enter E: "
+A:.word 	
+B:.word	
+C:.word 	
+D:.word 
+E:.word 
+
+
+	#data part 	
+	.data	
+array: 		.space 20 #cretaed an array, max size:20 ie. it can contain 5 integers 
+prompt:		.asciiz "Please enter the number of elements: "
+enterIntPrompt:	.asciiz "Enter a number: "
+endl: 		.asciiz "\n"
+iterator: 	.word 0 #iterator=0
+numberOfElements: 	.word
+seperator: 	.asciiz "-"
+	#text part 
+	.text
+	.globl __start
+__start:
+	la $t0,array 
+	la $t1,prompt 
+	la $t2,enterIntPrompt
+	la $t3,endl
+	lw $t4,iterator#i
+	lw $t5,numberOfElements
+	la $s1,seperator
+####################################################	
+	la $a0,($t1)#Welcome message 
+	li $v0,4
+	syscall
+	
+	li $v0,5
+	syscall	
+	
+	move $t5,$v0 # number of elements
+	addi $t5,$t5,-1# we will start at index 0 
+	
+loop:	bgt $t4,$t5,print_loop
+	sll $t7,$t4,2 #t4=i; t6=4*i
+	addu $t7,$t7,$t0
+	la $a0,($t2)# Enter 1
+	li $v0,4
+	syscall
+
+	li $v0,5
+	syscall	
+	#la $t0,($v0)
+	sw $v0,0($t7)	
+	addi $t4,$t4,1
+	j loop	
+reverse_print:
+		blt $t4,$zero,exit
+		srl $s2,$t4,2
+		subu  $s2,$s2,$t0
+		lw $a0,($s2)
+		li $v0,1
+		syscall
+		lw $a0,($s1)
+		li $v0,4
+		syscall
+		addi $t4,$t4,-1
+		j reverse_print	
+print_loop: 	bgt $s0,$t5,exit
+	
+		sll $t6,$s0,2 #t4=i; t6=4*i
+		addu $t6,$t6,$t0
+		lw $a0,($t6)
+		li $v0,1
+		syscall
+		la $a0,($s1)
+		li $v0,4
+		syscall
+		addi $s0,$s0,1
+		j print_loop
+exit:
+	li $v0,10
+	syscall
+	 (c-d)% Without Using Division
+
+.text 
+.globl __start
+__start:
+ 	lw $t0,c 
+ 	lw $t1,d
+ 	la $t4,endl#newline
+ 	la $t6,cMd#c minus d 
+ 	la $t7,modulTwo #c-d%2
+ 	sub $t3,$t0,$t1 #c-d
+ 	la $a0,($t6)
+ 	li $v0,4
+ 	syscall
+ 	la $a0,($t3)
+ 	li $v0,1
+ 	syscall 	
+ 	andi $t5,$t3,1 #take the least significant bit of c-d 
+ 		           #which it will give us the %2 of value 
+ 	
+ 	la $a0,($t4)
+ 	li $v0,4
+ 	syscall 
+ 	la $a0,($t7)
+ 	li $v0,4
+ 	syscall
+ 	la $a0,($t5)
+ 	li $v0,1
+ 	syscall 
+.data
+c: .word 81
+d: .word 77 
+endl: .asciiz "\n"
+cMd: .asciiz " c-d = " #c minus d
+modulTwo: .asciiz "(c-d)%2 = " 
+

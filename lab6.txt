@@ -1,0 +1,187 @@
+ELIF GULSAH KASDOGAN 
+21601183
+CS224-LAB7 CODE 
+
+/*
+ * Project name:
+     Led_Blinking (The simplest simple example)
+ * Copyright:
+     (c) Mikroelektronika, 2012.
+ * Revision History:
+     20120810:
+       - initial release (FJ);
+ * Description:
+     Simple "Hello world" example for the world of PIC32 MCUs;
+ * Test configuration:
+     MCU:             P32MX795F512L
+                      http://ww1.microchip.com/downloads/en/DeviceDoc/61156F.pdf
+     Dev.Board:       EasyPIC Fusion v7 - ac:LED
+                      http://www.mikroe.com/easypic-fusion/
+     Oscillator:      XT-PLL, 80.0000MHz
+     Ext. Modules:    None.
+     SW:              mikroC PRO for PIC32
+                      http://www.mikroe.com/mikroc/pic32/
+ * NOTES:
+     - Turn ON PORTA, B, C, D, F & G LEDS at SW15. (board specific)
+ */
+#include <built_in.h>
+#include<stdio.h>
+unsigned long adc_result = 0;
+
+void delay(int i) {
+  while (i--) {
+          Delay_ms(1);
+  }
+}
+int i;
+int tempHead;
+int tempTail;
+
+#define light0  PORTD.RD0
+#define light1  PORTD.RD1
+#define light2  PORTD.RD2
+#define light3  PORTD.RD3
+#define light4  PORTD.RD4
+#define light5  PORTD.RD5
+#define light6  PORTD.RD6
+#define light7  PORTD.RD7
+
+void reverseThem(){
+     //gets PORTD's bits and reverses them bitwise
+     //first digit
+     tempHead=light0;
+     tempTail=light7;
+
+     light0=tempTail;//put to 0 th position the last value
+     light7=tempHead;
+
+     //second digit
+     tempHead=light1;
+     tempTail=light6;
+
+     light1=tempTail;//put to 0 th position the last value
+     light6=tempHead;
+
+     //third digit
+     tempHead=light2;
+     tempTail=light5;
+
+     light2=tempTail;//put to 0 th position the last value
+     light5=tempHead;
+
+     //fourth digit
+     tempHead=light3;
+     tempTail=light4;
+
+     light3=tempTail;//put to 0 th position the last value
+     light4=tempHead;
+
+     //done
+}
+
+
+void main() {
+  AD1PCFG = 0xFFFF;      // Configure AN pins as digital I/O
+  JTAGEN_bit = 0;        // Disable JTAG
+
+
+  TRISD = 0;             // Initialize PORTD as output
+  TRISF = 0xFFFF;             // Initialize PORTE as input
+
+  LATD = 0xFFFF;
+  PORTD= 0xFFFF;          // Set PORTD to zero
+
+  LATF = 0xFFFF;
+  PORTF= 0xFFFF;          // Set PORTF to zero
+  Delay_ms(1000);
+
+  i=500;
+
+  do{
+           if(PORTFbits.RF0==0 && PORTFbits.RF1!=0){
+           //button 0 is pushed
+           //display binary numbers from left to right
+              while(PORTFbits.RF0==0){
+                 while(PORTFbits.RF1!=0){
+
+                    PORTD--;
+                    delay(i);
+                    
+                    
+                    if(PORTFbits.RF2==0 && PORTFbits.RF3!=0){
+                     //button 2 is pushed, 3 not
+                     //slower than a half second (500)ms
+
+                       i=1000;
+
+                     }
+
+                     else{
+                          if(PORTFbits.RF3==0 && PORTFbits.RF2!=0){
+                          //button 3 is pushed but 1,2 and 3 are not pushed
+                          //faster than a half second (500)ms
+
+                            i=100;
+                          }
+
+                          else{
+                          //non of 4 buttons are pushed
+                                if(PORTFbits.RF3==0 && PORTFbits.RF2==0){
+                                //both speed controlllers are enabled,
+                                //runs in half second (500)ms
+                                  i=500;
+                                }
+                          }
+                     }
+                 } 
+               }
+           }
+           
+           else{
+                if(PORTFbits.RF1==0 && PORTFbits.RF0!=0){
+                //button 1 is pushed, 2 is not pushed
+                //display binary numbers from right to left
+                //temporary solution: light all of them up
+                    PORTD= 0xFFFF;
+                    while(PORTFbits.RF1==0&& PORTFbits.RF0!=0){
+                        PORTD--;
+                        reverseThem();
+                        delay(i);
+                        reverseThem();
+                    
+                    
+                    if(PORTFbits.RF2==0 && PORTFbits.RF3!=0){
+                     //button 2 is pushed, 3 not
+                     //slower than a half second (500)ms
+
+                       i=1000;
+
+                     }
+
+                     else{
+                          if(PORTFbits.RF3==0 && PORTFbits.RF2!=0){
+                          //button 3 is pushed but 1,2 and 3 are not pushed
+                          //faster than a half second (500)ms
+
+                            i=100;
+                          }
+
+                          else{
+                          //non of 4 buttons are pushed
+                                if(PORTFbits.RF3==0 && PORTFbits.RF2==0){
+                                //both speed controlllers are enabled,
+                                //runs in half second (500)ms
+                                  i=500;
+                                }
+                          }
+                     }
+                    }
+                }
+
+                else{
+                      PORTD= 0xFFFF;
+                }
+           }
+  }
+  while(1);
+}

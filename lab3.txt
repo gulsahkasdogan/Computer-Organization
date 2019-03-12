@@ -1,0 +1,255 @@
+
+#################################################
+##
+##
+##	dummy routines for the 4 utilities which
+##	  students should write for Lab3
+##
+##
+###############################################
+#
+### Fill Those functions
+Insert_end:
+	li $v0,-1
+	#a0= address of linked list 
+	#a1=value of node to be inserted 
+	
+	li $t0,0 #counter 
+	
+	move $v1,$a0 #address of first element initially 
+	
+	addi $sp, $sp, -4 # store address 
+	sw $v1, 0($sp)
+	
+	beq $v1,$zero,listIsEmtpy
+	#list is initially empty add one element to list 
+	
+	lw $s1,0($v1) #pointer to next
+	
+	beq $s1,$zero,hasOneElement
+	
+	x:	lw $v1,0($v1)#take next element 
+		
+		lw $s1,0($v1)#take new elements pointer to next 
+		
+		beq $s1,$zero,reachedToEnd
+		
+		j x
+		
+reachedToEnd:	#allocate memory 
+		li $a0,16 
+		li $v0,9 
+		syscall
+		
+		move $t1,$v0 #t1 has new elements address 
+		#new element will be our last element 
+		
+		sw $t1,0($v1)
+		sw $zero,0($t1)
+		sw $a1,4($t1)
+		j endInsert
+		
+listIsEmtpy:	la $a0,msg82
+		li $v0,4
+		syscall
+		j endInsertUnsuccess
+	
+hasOneElement:	#allocate memory 
+		li $a0,16 
+		li $v0,9 
+		syscall
+		move $t1,$v0 #t1 has new elements address 
+		#new element will be our last element 
+		sw $t1,0($v1)
+		sw $zero,0($t1)
+		sw $a1,4($t1)
+		j endInsert
+	
+endInsert:	lw	$v1, 0($sp)
+		addi	$sp, $sp, 4
+		li $v0,0
+		
+		addi $t8,$t8,1#increment to number of elements 
+		
+		jr $ra
+		
+endInsertUnsuccess:	lw	$v1, 0($sp)
+			addi	$sp, $sp, 4 
+			jr $ra
+####################################################################
+
+Display_Reverse_Order:
+	li $v0, -1
+	#a0= start of list 
+	#
+	move $v1,$a0
+	
+	addi $sp,$sp,-4
+	sw $v1,0($sp)
+	
+	la $a0,displayRev
+	li $v0,4
+	syscall
+
+	li $s0,0
+			
+	# t7 counter 
+	li $t7,0
+	
+	#t8 has number of elements, allocate heap for an array 
+	
+	li $t0,0
+	sll $t0,$t8,4
+	
+	move $a0,$t0
+	li $v0,9
+	syscall
+	#heap allocated 
+	#v0 has the starting address of the array 
+	
+	move $s1,$v0 
+	#s1 has the starting address of array 
+	move $t2,$s1
+	
+
+	#store starting address of linked list to stack 
+	
+	bne $v1,$zero,copyElements
+	
+copyElements: 	lw $s0,4($v1)#take value of node 
+
+		sw $s0,0($t2)
+		addi $t2,$t2,16
+		lw $v1,0($v1)#move to next node 
+		
+		bne $v1,$zero,copyElements
+		beq $v1,$zero, takeTheLast
+
+takeTheLast:	j printThem		
+	
+printThem:	lw $t5,0($t2)
+
+		move $a0,$t5
+		li $v0,1
+		syscall
+		
+		la $a0,msg85
+		li $v0,4
+		syscall
+		
+		addi $t2,$t2,-16 
+		addi $t7,$t7,1
+		
+		ble $t7,$t8,printThem
+		
+		la $a0,printedAll
+		li $v0,4
+		syscall
+		j doneprinting		
+
+
+doneprinting:	lw $v1,0($sp)
+		addi $sp,$sp,4
+		li $v0,0
+		
+		jr $ra
+
+
+####################################################################
+Delete_n:
+	#a0 has pointer to first element 
+	#a1 has index of element to be deleted
+	
+	li $t0,0 #counter 
+	move $v1,$a0
+	addi $t1,$a1,-2    #v1 has address 
+			#t1 has element to be deleted 
+			
+	addi $sp,$sp,-4 
+	sw $v1,0($sp)  
+	
+	bgt $t1,$t8,invalidEntry #if index is more than number of elements stop
+
+	beq $a1,1,deleteFirst
+	
+	beq $a1,2,deleteSecond
+	
+#	lw $s1,0($v1)#next pointer of current element 
+	
+continueIncr:	lw $v1,0($v1)
+		addi $t0,$t0,1
+		blt $t0,$t1,continueIncr
+		j lostAndFound #you found it!
+
+lostAndFound:   #pointer manipulationn 
+		lw $s0,0($v1)
+		lw $s0,0($s0)#2 sonraki elemanýn adresi
+		sw $s0,0($v1)
+		j doneDeleteN
+		
+doneDeleteN:	lw	$v1, 0($sp)
+		addi	$sp, $sp, 4 	
+		li $v0, 0
+		
+		addi $t8,$t8,-1
+		
+		jr $ra
+
+doneDeleteFirst:	addi $sp,$sp,4
+		li $v0,0
+		addi $t8,$t8,-1
+		
+		jr $ra	
+
+invalidEntry: 	lw	$v1, 0($sp)
+		addi	$sp, $sp, 4 	  
+		jr $ra
+
+deleteFirst:	lw $s1,0($v1)
+		move $v1,$s1
+		j doneDeleteFirst
+
+deleteSecond:	lw $s1,0($v1)
+		lw $s1,0($s1)
+		sw $s1,0($v1)
+		j doneDeleteN
+	
+####################################################################
+
+Display_Reverse_Order_Recursively:	li $v0,-1
+					
+					#t8 has number of elements
+					move $t0,$t8
+					move $t3,$a0
+					
+					#move $v1,$a0#move starting address of linked list to v1
+					bne $s1,$zero,continue
+					#lw $s1,0($v1)
+				continue: 	lw $s2,4($v1)
+						lw $s1,0($v1)
+						addi	$sp, $sp, -8
+						sw	$s2, 4($sp)
+						sw	$ra, 0($sp)
+					
+				basecase:	bne $s1,$zero,recursivePart
+						#add	$sp, $sp, 8	
+						jr $ra 
+						
+				
+				recursivePart: 	lw $v1,0($v1)
+					
+					jal	Display_Reverse_Order_Recursively
+						lw	$ra, 0($sp)
+						lw	$s2,4($sp)
+						addi	$sp, $sp, 8
+						
+						move $a0,$s2
+						li $v0,1
+						syscall
+						
+						la $a0,msg85
+						li $v0,4
+						syscall
+						
+					
+						jr	$ra

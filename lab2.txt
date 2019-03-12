@@ -1,0 +1,377 @@
+####2.03
+.data 
+.align 4
+array:		.space 800
+upperBound:	.word 100
+size:		.word 
+welcome:		.asciiz "Enter number of integers: "
+endl:		.asciiz "\n"
+check:		.asciiz "************************************************** \n"
+mainMenu: 	.asciiz "Welcome \n"
+bubble:		.asciiz "\nBUBBLE SORT\n"
+bye:		.asciiz "\nDone \n "
+invalidArraySize:	.asciiz "Invalid size\n"
+maxMessage:	.asciiz "\nMAX: "
+minMessage:	.asciiz "\nMIN: "
+monitorMesg:	.asciiz "Welcome, please choose an operation to perform: \n 1.Bubble Sort \n 2.Minimum/Maximum element \n 3.Number of unique elements \n 4.PrintArray\n 5.Quit\n Selection:"
+invalidMonitor:	.asciiz "Invalid entry! \n"
+noOfUnique:	.asciiz "\nNumber of Unique elements: "
+tryAgain:		.asciiz "\nContinue to operation? \nPress 1 for yes! "
+.text 
+	.globl __start
+__start:		la $s5,array
+		la $s1,size
+		
+		la $a0,mainMenu
+		li $v0,4
+		syscall
+		
+		la $a0,array #beginning address of array
+		lw $a1,upperBound #fillArray takes a1 as an argument 
+		
+		jal readArray 	#a0=address of array 
+				#a1=number of elements
+		jal monitor		
+		#jal bubbleSort
+		#jal printArray
+		#jal noOfUniqueElements
+		
+		move $a0,$v0
+		li $v0,1
+		syscall
+		
+		#jal monitor
+		
+		la $a0,bye
+		li $v0,4
+		syscall
+		
+		j exit
+
+########### BEGINNING OF MONITOR #################
+
+monitor:	sw $ra,0($sp)
+	#la $t0,0($a0)#array address 
+again1:	la $a0,monitorMesg
+	li $v0,4
+	syscall
+	
+	li $v0,5
+	syscall
+	la $a0,0($s5)
+	
+	beq $v0,1,opBubbleSort
+	beq $v0,2,opMinMax
+	beq $v0,3,opUnique
+	beq $v0,4,opPrint
+	beq $v0,5,opQuit
+	j invalid
+
+
+opBubbleSort:	jal bubbleSort
+		j again
+		
+opMinMax:		jal minMax
+		j again
+
+opUnique:		jal noOfUniqueElements
+		j again
+
+opQuit:		j exit
+
+opPrint:		jal printArray
+		j again
+
+invalidSelection:	la $a0,invalidMonitor
+		li $v0,4
+		syscall 
+		#lw $ra,0($sp)
+		#j monitor
+
+again:		la $a0,tryAgain
+		li $v0,4
+		syscall
+		
+		li $v0,5
+		syscall
+		
+		beq $v0,1,again1
+		j done
+
+done:	lw $ra,0($sp)
+	jr $ra
+	
+########### END OF MONITOR #################
+
+########### BEGINNING OF READ ARRAY #################		
+
+#returns array addresss at a0, and array size at a1 
+readArray:	
+		move $s0,$a0
+
+		la $a0,welcome
+		li $v0,4
+		syscall
+	
+		li $v0,5
+		syscall
+		
+boundCheck:	ble $v0,$zero,invalid
+	#	bgt $v0,$a1,invalid
+		j valid
+		
+invalid:		la $a0,invalidArraySize
+		li $v0,4
+		syscall
+		j readArray
+
+valid:		#else 
+		addi $v0,$v0,-1
+		la $t0,($v0)# t0= number of elements-1
+		
+		sw $t0,0($s1)# store number of elements-1 for later loops
+		
+		#t1= iterator	
+		
+	fillArray:	bgt $t1,$t0,arrayFilled
+			
+			li $v0,42
+			syscall # syscall for random number generation
+			#random number generated is in a0
+			#put the element in a0 to proper array position
+			li $v0,1
+			syscall# to check will be removed later 
+			
+			sll $t2,$t1,2
+			addu $t2,$t2,$s0
+			
+			sw $a0,($t2)#place the random number to proper array position
+			
+			addi $t1,$t1,1
+			
+			la $a0,endl
+			li $v0,4
+			syscall 
+			
+			j fillArray 
+	
+	arrayFilled:	la $t5,0($s0)# t5 has beginning address of array 
+			mul $t1,$t1,0
+			
+			la $a0,check
+			li $v0,4
+			syscall 
+			
+			j print
+	
+	print:		bgt $t1,$t0,returnReadArray
+			
+			sll $t6,$t1,2
+			
+			addu $t6,$t6,$t5
+			
+			lw $a0,($t6)
+			li $v0,1
+			syscall
+			
+			la $a0,endl
+			li $v0,4
+			syscall 
+			
+			addi $t1,$t1,1
+			j print 
+
+	returnReadArray:	la $a0,0($t5) #addres of array 
+			la $a1,0($t0) #number of elements 
+			#t0,t1,t2,t5,t6,
+			mul $t0,$t0,0
+			mul $t1,$t0,0
+			mul $t2,$t0,0
+			mul $t3,$t0,0
+			mul $t5,$t0,0
+			mul $t6,$t0,0			
+			jr $ra
+			
+########### END OF READ ARRAY #################
+
+
+########### BEGINNING OF BUBBLESORT #################
+bubbleSort:	#array = a0
+		#size =a1	
+		
+		mul $t2,$t2,0
+		la $t2,($a0)#array
+
+		li $t0,0 #iterator one
+		li $t1,0 #iterator two
+		li $t4,0
+		li $t5,0
+		li $t6,0
+		li $t7,0
+		li $t8,0
+		
+		nextHeader:
+			addi $t0,$t0,1
+			bgt $t0,$a1,sorted
+			
+			addi $t1,$a1,1 
+			j tailToHead
+		
+		tailToHead:
+			bge $t0,$t1,nextHeader
+			addi $t1,$t1,-1
+			sll $t4,$t1,2 #a[i]
+			addi $t3,$t4,-4 #a[i-1]
+			
+			add $t7,$t2,$t4#address of a[i]
+			
+			add $t8,$t2,$t3#address of a[i-1]
+			
+			#compare a[i] and a[i-1]
+			#if a[i-1]>a[i] swap them so that you will get lower variable on your left 
+			#by shifting right the start point at every iteration we will sort array 
+			
+			lw $t5,0($t7)
+			lw $t6,0($t8)
+			
+			bge $t6,$t5,swap
+			j tailToHead
+		
+		swap:	sw $t5,0($t8)
+			sw $t6,0($t7)
+			j tailToHead
+		
+		sorted:	#la $a0,bubble
+			#li $v0,4
+			#syscall
+			
+			la $a0,0($t2)
+			
+			jr $ra
+			
+########### END OF BUBBLESORT #################
+
+
+########### BEGINNING OF MIN MAX #################
+
+minMax:	sw $ra,0($sp)
+	jal bubbleSort
+	#a0 has array 
+	lw $t1,0($s1)
+	
+	mul $t1,$t1,4
+	add $t1,$t1,$a0
+	
+	#t1=last element of array 
+	
+	lw $v0,0($a0)
+	lw $v1,0($t1)
+	
+	move $t1,$v0
+	la $a0,minMessage
+	li $v0,4
+	syscall
+	
+	la $a0,($t1)
+	li $v0,1
+	syscall
+	
+	move $t2,$v1
+
+	la $a0,maxMessage
+	li $v0,4
+	syscall
+	
+	la $a0,($t2)
+	li $v0,1
+	syscall
+	
+	lw $ra,0($sp)
+	jr $ra
+	
+########### END OF MIN MAX #################
+
+
+########### BEGINNING OF NO OF UNIQUE ELEMENTS #################
+
+noOfUniqueElements: 
+	#takes a0 as array address; a1 as size of array 
+ 	li $t0,0#array
+	li $t7,0
+	sw $ra,0($sp)
+	jal bubbleSort
+	la $t0,0($a0)
+	
+
+	#la $t0,0($a0)
+	li $t1,0#number of elements
+	la $t1,($a1)
+	li $t2,0#iterator
+	li $t3,0#address of element 
+	li $t4,0
+	li $t5,0
+	li $t6,0
+	
+	
+	
+	addi $t1,$t1,1
+		#taýke element þf equal next elment ifnot increment counter by one and next 
+loopUniq:	bgt $t2,$a1,returnUniques
+	#else 
+takeElement:	sll $t3,$t2,2
+		add $t3,$t0,$t3#address of element 
+		lw $t5,0($t3)
+compareToNextElement:	lw $t6,4($t3)#next element
+			
+			bne $t5,$t6,incrementAndNext
+			beq $t5,$t6,justNext
+			
+			incrementAndNext: 	addi $t2,$t2,1
+					addi $t4,$t4,1#counter++
+					j loopUniq
+			
+			
+			justNext:	addi $t2,$t2,1
+				j loopUniq 		
+	
+	
+	returnUniques:	la $a0,noOfUnique
+			li $v0,4
+			syscall 
+			
+			move $a0,$t4
+			li $v0,1
+			syscall
+			
+			la $v0,($t4)
+			lw $ra,0($sp)
+			jr $ra
+
+########### END OF NO OF UNIQUE ELEMENTS #################
+
+exit:
+	li $v0,10
+	syscall 
+
+printArray:		mul $t6,$t6,0
+			mul $t1,$t1,0
+			la $t5,0($a0)
+			
+		back:	bgt $t1,$a1,end 
+			sll $t6,$t1,2
+			
+			addu $t6,$t6,$t5
+			
+			lw $a0,0($t6)
+			li $v0,1
+			syscall
+			
+			la $a0,endl
+			li $v0,4
+			syscall 
+			
+			addi $t1,$t1,1
+			j back
+		
+		end: 	la $a0,0($t5)
+			jr $ra
